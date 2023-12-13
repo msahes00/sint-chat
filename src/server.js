@@ -30,9 +30,10 @@ wss.on('connection', (ws) => {
 			storage.sockets.forEach((socket) => {
 				socket.send(message);
 			});
+			storage.data.push(message);
 		});
 
-	}, 5000);
+	}, 1000);
 	
 	ws.on('close', () => {
 		console.log('Client disconnected');

@@ -1,39 +1,37 @@
 import React, { Component } from 'react';
 
 class Chat extends Component {
-  ws = null;
   state = {
     messages: [],
     newMessage: '',
+    server: 'localhost',
+    port: '3064',
   };
 
-  initializeWebSocket(host = 'localhost', port = '3064') {
+  ws = null;
 
-    this.ws = new WebSocket('ws://' + host + ':' + port);
+  initializeWebSocket() {
 
+    const { server, port } = this.state;
+
+    this.ws = new WebSocket(`ws://${server}:${port}`);
     this.ws.onmessage = this.receiveMessage.bind(this);
 
-    this.ws.onopen = () => {
-      console.log('Connected to WebSocket');
-    };
-
-    this.ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-    }
-
-    this.ws.onclose = (event) => {
-      console.log('Disconnected from WebSocket');
-    };
+    this.ws.onopen = () => console.log('Connected to WebSocket');
+    this.ws.onclose = () => console.log('Disconnected from WebSocket');
+    this.ws.onerror = (event) => console.error('WebSocket error:', event);
   }
 
   receiveMessage(event) {
-    this.setState((state) => ({ messages: [...state.messages, event.data] }));
-    console.log('Message received from server: ', event);
+    this.setState((prevState) => ({
+      messages: [...prevState.messages, event.data],
+    }));
+    console.log('Message received from server:', event);
   }
 
   sendMessage(message) {
     this.ws.send(message);
-    console.log('Message sent to server: ', message);
+    console.log('Message sent to server:', message);
   }
 
   handleInputChange(event) {
@@ -41,7 +39,8 @@ class Chat extends Component {
   }
 
   handleSendClick() {
-    this.sendMessage(this.state.newMessage);
+    const { newMessage } = this.state;
+    this.sendMessage(newMessage);
     this.setState({ newMessage: '' });
   }
 
@@ -53,21 +52,53 @@ class Chat extends Component {
     this.ws.close();
   }
 
+  changeServer() {
+    this.ws.close();
+    this.setState({ messages: [] });
+    const server = document.getElementById('server').value;
+    const port = document.getElementById('port').value;
+    if (!server || !port) {
+      this.initializeWebSocket();
+    } else {
+      this.setState({ server, port }, () => {
+        this.initializeWebSocket();
+      });
+    }
+  }
+
   render() {
+    const { messages, newMessage, server, port } = this.state;
     return (
       <div>
         <h1>By Miguel Sahelices Sarmiento</h1>
         <h1>Chat messages:</h1>
-        <div style={{ border: "1px solid black", padding: "1px" }}>
-          {this.state.messages.map((message, index) => (
+        <div style={{ border: '1px solid black', padding: '1px' }}>
+          {messages.map((message, index) => (
             <p key={index}>{message}</p>
           ))}
         </div>
-        <textarea
-          value={this.state.newMessage}
-          onChange={this.handleInputChange.bind(this)}
-        />
-        <button onClick={this.handleSendClick.bind(this)}>Send</button>
+        <h1>Send a message:</h1>
+        <table>
+          <tbody>
+            <tr>
+              <td>Message:</td>
+              <td>
+                <textarea value={newMessage} onChange={this.handleInputChange.bind(this)} />
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <button type="submit" onClick={this.handleSendClick.bind(this)} style={{ width: '100%' }}>
+                  Submit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <input type="text" placeholder="localhost" id="server" defaultValue={server} />
+        <input type="text" placeholder="3064" id="port" defaultValue={port} />
+        <button onClick={this.changeServer.bind(this)}>Change Server</button>
       </div>
     );
   }
